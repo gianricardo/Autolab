@@ -1,7 +1,6 @@
 var hideStudent;
 
-jQuery(function($) {
-
+$(document).ready(function() {
 
   $.fn.dataTable.ext.search.push(
     function(settings, data, dataIndex) {
@@ -15,7 +14,6 @@ jQuery(function($) {
       }
     }
   );
-
 
   var $floater = $("#floater"),
     $backdrop = $("#gradeBackdrop");
@@ -35,8 +33,8 @@ jQuery(function($) {
     'sPaginationType': 'full_numbers',
     'iDisplayLength': 100,
     'oLanguage': {
-      'sLengthMenu':'<input type="checkbox" id="only-latest">' +
-        '<label for="only-latest">Show only latest</label>'
+      'sLengthMenu':'<label><input type="checkbox" id="only-latest">' +
+        '<span>Show only latest</span></label>'
     },
     "columnDefs": [{
       "targets": [7],
@@ -98,8 +96,8 @@ jQuery(function($) {
   });
 
   $('#submissions').on("click", ".submission-row", function(e) {
-    // Don't toggle row if we originally clicked on an anchor tag
-    if(e.target.localName != 'a') {
+    // Don't toggle row if we originally clicked on an anchor and input tag
+    if(e.target.localName != 'a' && e.target.localName !='input') {
       // e.target: tightest element that triggered the event
       // e.currentTarget: element the event has bubbled up to currently
       var submissionId = parseInt(e.currentTarget.id.replace("row-", ""), 10);
@@ -112,15 +110,6 @@ jQuery(function($) {
     var submissionId = parseInt(e.currentTarget.id.replace("cbox-", ""), 10);
     toggleRow(submissionId);
     e.stopPropagation();
-  });
-
-  $('.regrade-override').click(function(e) {
-    // Because regrade requests are sent with `data-method="post"`, we need to
-    // trick the link into behaving... like a link. When holding down Ctrl or
-    // Cmd, the regrade should open in a new tab.
-    if (e.metaKey || e.ctrlKey) {
-      $(this).attr('target', '_blank');
-    }
   });
 
 });

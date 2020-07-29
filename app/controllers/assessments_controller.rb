@@ -4,6 +4,7 @@ require "fileutils"
 require "rubygems/package"
 require "statistics"
 require "yaml"
+require "utilities"
 
 class AssessmentsController < ApplicationController
   include ActiveSupport::Callbacks
@@ -442,7 +443,7 @@ class AssessmentsController < ApplicationController
         score: result["score"].to_f,
         feedback: result["feedback"],
         score_id: result["score_id"].to_i,
-        released: result["released"].to_i
+        released: Utilities.is_truthy?(result["released"]) ? 1 : 0
       }
     end
 
@@ -474,7 +475,7 @@ class AssessmentsController < ApplicationController
               .joins("LEFT JOIN scores ON
         (submissions.id = scores.submission_id
         AND problems.id = scores.problem_id)")
-
+    
     # Process them to get into a format we want.
     @scores = {}
     for result in results do
@@ -485,7 +486,7 @@ class AssessmentsController < ApplicationController
         score: result["score"].to_f,
         feedback: result["feedback"],
         score_id: result["score_id"].to_i,
-        released: result["released"].to_i
+        released: Utilities.is_truthy?(result["released"]) ? 1 : 0 # converts 't' to 1, "f" to 0
       }
     end
 
@@ -502,15 +503,69 @@ class AssessmentsController < ApplicationController
   def viewFeedback
     # User requested to view feedback on a score
     @score = @submission.scores.find_by(problem_id: params[:feedback])
-
+    @jsonFeedback = parseFeedback(@score.feedback)
     if !@score
       flash[:error] = "No feedback for requested score"
       redirect_to(action: "index") && return
     end
-
+    if @jsonFeedback != nil
+      @scoreHash = parseScore(@score.feedback)
+    end
     if Archive.archive? @submission.handin_file_path
       @files = Archive.get_files @submission.handin_file_path
     end
+  end
+
+  def parseScore(feedback)
+    lines = feedback.lines
+    feedback = lines[lines.length - 1].chomp
+    if valid_json?(feedback)
+      score_hash = JSON.parse(feedback)
+      score_hash = score_hash["scores"]
+      if @jsonFeedback.key?("_scores_order") == false
+        @jsonFeedback["_scores_order"] = score_hash.keys
+      end
+      @total = 0
+      for k in score_hash.keys
+        @total  = @total + score_hash[k]
+      end
+      score_hash["_total"] = @total
+      score_hash
+    else
+      nil
+    end
+  end
+  def parse_stages(jsonFeedbackHash)
+    @result = true
+    if jsonFeedbackHash.key?("stages")
+      for stage in jsonFeedbackHash["stages"]
+        if jsonFeedbackHash[stage].key?("_order") == false
+          jsonFeedbackHash[stage]["_order"] = jsonFeedbackHash[stage].keys
+        end
+      end
+    end
+    @result
+  end
+
+  def parseFeedback(feedback)
+    lines = feedback.lines
+    feedback = lines[lines.length - 2].chomp
+    if valid_json?(feedback)
+      jsonFeedbackHash = JSON.parse(feedback)
+      if jsonFeedbackHash.key?("_presentation") == false
+        return nil
+      elsif jsonFeedbackHash["_presentation"] == "semantic" && parse_stages(jsonFeedbackHash) != nil
+        jsonFeedbackHash
+      end
+    else
+      nil
+    end
+  end
+
+  def valid_json?(json)
+    hash = JSON.parse(json)
+  rescue JSON::ParserError => e
+    return false
   end
 
   action_auth_level :reload, :instructor
@@ -529,7 +584,7 @@ class AssessmentsController < ApplicationController
     params[:active_tab] ||= "basic"
 
     # make sure the 'active_tab' is a real tab
-    unless %w(basic handin penalties problems).include? params[:active_tab]
+    unless %w(basic handin penalties problems advanced).include? params[:active_tab]
       params[:active_tab] = "basic"
     end
 
@@ -743,6 +798,8 @@ private
       tab_name = "handin"
     elsif params[:penalties]
       tab_name = "penalties"
+    elsif params[:advanced]
+      tab_name = "advanced"
     end
 
     edit_course_assessment_path(@course, @assessment) + "/#tab_"+tab_name

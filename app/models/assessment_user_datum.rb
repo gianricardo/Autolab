@@ -6,7 +6,7 @@ require "association_cache"
 # status (excused or whatever) on an assessment.  It's also used by Groups, and tracks the latest
 # submission of the user for an assessment.
 #
-class AssessmentUserDatum < ActiveRecord::Base
+class AssessmentUserDatum < ApplicationRecord
   belongs_to :course_user_datum
   belongs_to :assessment
   belongs_to :latest_submission, class_name: "Submission"
@@ -21,8 +21,7 @@ class AssessmentUserDatum < ActiveRecord::Base
   # * similarly, when the grade type is updated, the number of grace days used could change.
   #   submissions associated with AUDs with Zeroed and Excused grade types aren't counted as late
   #   even if they were submitted past the due date whereas Normal grade type AUD submissions are.
-  after_save :invalidate_cgdubs_for_assessments_after, if: :latest_submission_id_changed?
-  after_save :invalidate_cgdubs_for_assessments_after, if: :grade_type_changed?
+  after_save :invalidate_cgdubs_for_assessments_after, if: :saved_change_to_latest_submission_id? or :saved_change_to_grade_type?
 
   NORMAL = 0
   ZEROED = 1
@@ -59,6 +58,7 @@ class AssessmentUserDatum < ActiveRecord::Base
   #   6. A: aud.save    (but then submission 1 is saved as aud.latest_submission)
   # by making sure (2 and 6) and (4 and 5) each occur atomically.
   def update_latest_submission
+
     AssessmentUserDatum.transaction do
       # acquire lock on AUD
       reload(lock: true)
@@ -68,6 +68,7 @@ class AssessmentUserDatum < ActiveRecord::Base
       save!
     end # release lock on AUD
     # see: http://dev.mysql.com/doc/refman/5.0/en/innodb-locking-reads.html
+
   end
 
   # Calculate latest unignored submission (i.e. with max version and unignored)
@@ -152,6 +153,8 @@ class AssessmentUserDatum < ActiveRecord::Base
       auds_for_assessments_after.each do |aud|
         Rails.cache.delete aud.cgdub_cache_key
       end
+
+      Rails.cache.delete course_user_datum.ggl_cache_key
     end # release lock
   end
 
@@ -171,7 +174,7 @@ class AssessmentUserDatum < ActiveRecord::Base
 
   # Check if user can submit at given date/time; provide reason, if not
   def can_submit?(at, submitter = course_user_datum)
-    if submitter.instructor?
+    if submitter.instructor? || submitter.course_assistant?
       [true, nil]
     elsif course_user_datum.dropped? # TODO: why not submitter?
       [false, :user_dropped]
@@ -223,6 +226,10 @@ class AssessmentUserDatum < ActiveRecord::Base
     insert_sql = "INSERT INTO #{table_name} (#{columns_sql}) VALUES (#{values_sql})"
     connection.execute insert_sql
   end
+  
+  def global_cumulative_grace_days_used
+    cumulative_grace_days_used
+  end
 
 protected
 
@@ -253,6 +260,7 @@ private
     return @cgdub if @cgdub
 
     cache_key = cgdub_cache_key
+    
     unless (cgdub = Rails.cache.read cache_key)
       CourseUserDatum.transaction do
         # acquire lock on user

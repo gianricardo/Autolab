@@ -8,8 +8,7 @@
 }
 
 .row {
-  max-height: calc(100vh - 205px);
-  overflow: hidden;
+  max-height: calc(100vh - 190px);
 }
 
 #code-loader {
@@ -344,7 +343,7 @@
 
 .ann-box > .header > .delete,
 .ann-box > .header > .minimize,
- .ann-box > .header > .edit {
+.ann-box > .header > .edit {
   border: 1px solid transparent;
   display: block;
   font-weight: bold;
@@ -352,7 +351,14 @@
   width: 2em;
   color: #666;
   border-radius: 4px;
+  cursor:pointer;
 }
+
+.ann-box > .maximize{
+  color: #666;
+  cursor:pointer;
+}
+
 
 .ann-box .score-box {
   float: right;
@@ -372,6 +378,7 @@
   background-color: #ccc;
 }
 
+.ann-box > .header > .minimize:hover,
 .ann-box > .header > .delete:hover,
 .ann-box > .header > .edit:hover {
   border: 1px solid #ccc;
@@ -385,8 +392,13 @@
 .annotation-edit-form {
   border-radius: 4px;
   font-family: 'Source Sans Pro', sans-serif;
-  padding: 6px;
+  padding-bottom: 5px;
   background-color: #fff;
+  text-align:left;
+  font-size: 14px;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.137255) 0px 0px 4px 0px, rgba(0, 0, 0, 0.278431) 0px 4px 8px 0px;
+  box-shadow: rgba(0, 0, 0, 0.137255) 0px 0px 4px 0px, rgba(0, 0, 0, 0.278431) 0px 4px 8px 0px;
+  z-index: 3;
 }
 
 .annotation-form hr {
@@ -399,11 +411,32 @@
   padding-bottom: 0;
 }
 
-#pdf-doc .annotation-form {
+#pdf-doc .annotation-form  {
   position: absolute;
   width: 400px;
+  text-align:left;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 14px;
   -webkit-box-shadow: rgba(0, 0, 0, 0.137255) 0px 0px 4px 0px, rgba(0, 0, 0, 0.278431) 0px 4px 8px 0px;
   box-shadow: rgba(0, 0, 0, 0.137255) 0px 0px 4px 0px, rgba(0, 0, 0, 0.278431) 0px 4px 8px 0px;
+  z-index: 3;
+}
+
+#pdf-doc .annotation-form > label , #pdf-doc .annotation-edit-form > label {
+  font-size: 16px;
+  color: #444;
+  font-weight: bold;
+  padding-left:10px;
+  padding-right:10px;
+}
+
+#pdf-doc .annotation-form > div, #pdf-doc .annotation-edit-form > div{
+  padding-right:10px;
+  padding-left:10px;
+}
+
+#pdf-doc .annotation-form > .btn, #pdf-doc .annotation-edit-form > .btn {
+  margin-left: 10px;
 }
 
 #pdf-doc .ann-box {
@@ -419,13 +452,14 @@
 }
 
 #pdf-doc .ann-box .body {
-  color: #ff0000;
+  color: #e22a2a;
+  font-size: 15px;
 }
 
 #pdf-doc .ann-box .score-box {
   float: none;
   background-color: transparent;
-  color: red;
+  color: black;
   border-radius: 2px;
   font-size: 12px;
   margin-right: 4px;
@@ -454,6 +488,11 @@
 }
 
 /* Annotation Pane Styling CSS */
+#annotationPane{
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
 .annotationSummary{
   border: solid 2px #569ff7;
   margin-bottom: 15px;
@@ -478,12 +517,15 @@
   box-shadow: none;
   border: none;
   margin: 10px 0;
+  max-height: 350px;
 }
 
 .annotationSummary .collapsible-header{
   min-height: inherit;
   line-height: inherit;
   border: none;
+  padding: 5px;
+  padding-left: 10px;
 }
 
 .annotationSummary .collapsible-header h4{
@@ -523,6 +565,7 @@
 
 .problemGrades{
   border: solid 2px #ebebeb;
+  overflow: auto;
 }
 .problemGrades h1{
   margin: 0px;
@@ -549,7 +592,6 @@
 }
 
 .problem-grade-item{
-  cursor: pointer;
   background-color: #fff;
   line-height: 1.5rem;
   padding: 2px 10px;
@@ -557,8 +599,13 @@
   border-bottom: 1px solid #e0e0e0;
   font-weight: bold;
   font-size: 0.9em;
-  color: #909090;
+  color: #7a7a7a;
 }
+
+.student_score{
+  color: #090;
+}
+
 
 /* File Tree Styling CSS */
 .file-explorer{
@@ -636,6 +683,7 @@
 
 #symbol-tree-box ul li {
   cursor: pointer;
+  display: flex;
 }
 
 #symbol-tree-box ul li:hover {
@@ -732,4 +780,16 @@
   100% {
     opacity: 0;
   }
+}
+.collapsible {
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.descript {
+  cursor: pointer;
+}
+
+.summary_score{
+  padding-left: 10px;
 }
